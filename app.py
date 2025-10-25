@@ -33,7 +33,7 @@ with st.form(key="screener_form"):
     with col1:
         st.subheader("Patient Information")
         # Use None as default for number_input to check if it's filled
-        Lowest egfr = st.number_input("Lowest eGFR", value=None, placeholder="e.g., 18", step=1.0)
+        egfr = st.number_input("Lowest eGFR", value=None, placeholder="e.g., 18", step=1.0)
         hgbA1c = st.number_input("HgbA1c (%)", value=None, placeholder="e.g., 7.5", step=0.1)
         ejection_fraction = st.number_input("Ejection Fraction on last ECHO (%)", value=None, placeholder="e.g., 55", step=1.0)
         
@@ -92,9 +92,9 @@ if submitted:
         display_result('Refer', 'Patient is currently on dialysis.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
     
     elif lowest egfr is not None:
-        if lowest egfr < =20:
+        if egfr < =20:
             display_result('Refer', f'Lowest eGFR is {egfr}, which is < =20.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
-        elif 20 <= lowest egfr <= 25 and has_uremia:
+        elif 20 <= egfr <= 25 and has_uremia:
             display_result('Refer', 'Lowest eGFR is between 20-25 and have signs of uremia.', ['Ensure uremia signs are stated in MD note.', 'Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
         else:
             # --- Step 3: If no criteria met ---
