@@ -91,7 +91,7 @@ if submitted:
     elif on_dialysis:
         display_result('Refer', 'Patient is currently on dialysis.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
     
-    elif lowest egfr is not None:
+    elif egfr is not None:
         if egfr < =20:
             display_result('Refer', f'Lowest eGFR is {egfr}, which is < =20.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
         elif 20 <= egfr <= 25 and has_uremia:
