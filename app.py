@@ -118,7 +118,7 @@ if submitted:
         
         if abuse:
             contraindication_reasons.append('Current drug or alcohol abuse.')
-            contraindication_next_steps.append(['Enter CD Eval as First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.'])
+            contraindication_next_steps.append(['Enter CD Eval as First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from CD Eval.'])
         
         if homeless:
             contraindication_reasons.append('Patient is homeless (high risk of infection).')
