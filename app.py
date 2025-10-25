@@ -67,7 +67,7 @@ if submitted:
     
     # --- Step 1: Check Contraindications ---
     elif hgbA1c > 10:
-        display_result('Do Not Refer', f'HgbA1c is {hgbA1c}%.', ['Work with Primary Medical Doctor/Endocrinologist, transplant refer after HbA1C<10'])
+        display_result('Do Not Refer', f'HgbA1c is {hgbA1c}%.', ['Work with Primary Medical Doctor/Endocrinologist, transplant referral after HbA1C<10'])
     elif ejection_fraction < 15:
         display_result('Do Not Refer', f'Ejection Fraction is {ejection_fraction}%.', ['Consult with cardiology to evaluate for reversible causes of low EF and optimization before transplant referral'])
     elif home_o2:
@@ -77,15 +77,15 @@ if submitted:
     elif cancer:
         display_result('Do Not Refer', 'Active cancer diagnosis.', ['Referral can be reconsidered after treatment and appropriate cancer-free period as determined by an oncologist.'])
     elif infection:
-        display_result('Do Not Refer', 'Active infectious disease.', ['Consult Infectious Disease refer after resolution of active infection and completion of course of antibiotics'])
+        display_result('Do Not Refer', 'Active infectious disease.', ['Consult Infectious Disease, refer after resolution of active infection and completion of course of antibiotics'])
     elif abuse:
-        display_result('Do Not Refer', 'Current drug or alcohol abuse.', ['Enter CD Eval for First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.'])
+        display_result('Do Not Refer', 'Current drug or alcohol abuse.', ['Enter CD Eval as First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.'])
     elif homeless:
         display_result('Do Not Refer', 'Patient is homeless (high risk of infection).', ['Address housing situation before referral can be considered.'])
     elif no_support:
         display_result('Do Not Refer', 'No social support system.', ['Patient needs to establish a reliable social support system before referral.'])
     elif noncompliance:
-        display_result('Do Not Refer', 'Missed Dialysis >50%', ['Patient must demonstrate a 6 month period of compliance before re-referral.'])
+        display_result('Do Not Refer', 'Missed Dialysis >50%', ['Patient must demonstrate a 6 months period of compliance before re-referral.'])
     
     # --- Step 2: Check Referral Qualifications ---
     elif on_dialysis:
