@@ -93,7 +93,7 @@ if submitted:
     
     elif egfr is not None:
         if egfr <= 20:
-            display_result('Refer', f'eGFR is {egfr}, which is < 20.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
+            display_result('Refer', f'eGFR is {egfr}, which is <= 20.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
         elif 21 <= egfr <= 25 and has_uremia:
             display_result('Refer', 'eGFR is between 20-25 and have signs of uremia.', ['Ensure uremia signs are stated in MD note.', 'Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
         else:
