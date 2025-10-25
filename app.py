@@ -94,7 +94,7 @@ if submitted:
 
         if hgbA1c > 10:
             contraindication_reasons.append(f'HgbA1c is {hgbA1c}%.')
-            contraindication_next_steps.append(['Work with Primary Medical Doctor/Endocrinologist, transplant refer after HbA1C<10'])
+            contraindication_next_steps.append(['Work with Primary Medical Doctor/Endocrinologist, transplant referral after HbA1C<10'])
         
         if ejection_fraction < 15:
             contraindication_reasons.append(f'Ejection Fraction is {ejection_fraction}%.')
@@ -114,11 +114,11 @@ if submitted:
         
         if infection:
             contraindication_reasons.append('Active infectious disease.')
-            contraindication_next_steps.append(['Consult Infectious Disease refer after resolution of active infection and completion of course of antibiotics'])
+            contraindication_next_steps.append(['Consult Infectious Disease, refer after resolution of active infection and completion of course of antibiotics'])
         
         if abuse:
             contraindication_reasons.append('Current drug or alcohol abuse.')
-            contraindication_next_steps.append(['Enter CD Eval for First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.'])
+            contraindication_next_steps.append(['Enter CD Eval as First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.'])
         
         if homeless:
             contraindication_reasons.append('Patient is homeless (high risk of infection).')
@@ -130,7 +130,7 @@ if submitted:
         
         if noncompliance:
             contraindication_reasons.append('Missed Dialysis >50%')
-            contraindication_next_steps.append(['Patient must demonstrate a 6 month period of compliance before re-referral.'])
+            contraindication_next_steps.append(['Patient must demonstrate a 6 months period of compliance before re-referral.'])
 
         # --- Step 2: Decide based on contraindications ---
         if contraindication_reasons:
