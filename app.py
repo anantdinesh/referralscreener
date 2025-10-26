@@ -65,7 +65,7 @@ with st.form(key="screener_form"):
         has_uremia = st.checkbox("Signs of Uremia (must be in MD note)", help="Required if lowest eGFR is 20-25")
 
     with col2:
-        st.subheader("Other Contraindications")
+        st.subheader("Patient History")
         home_o2 = st.checkbox("Requires Home O2")
         smoker = st.checkbox("Current Active Smoker")
         cancer = st.checkbox("Active Cancer")
