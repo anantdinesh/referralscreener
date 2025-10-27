@@ -1,164 +1,278 @@
 import streamlit as st
 
-def display_result(decision, reasons, next_steps_list):
+# --- Initialize Session State ---
+# This holds the output of the screening, much like React's `useState`
+if 'screening_result' not in st.session_state:
+    st.session_state.screening_result = None
+if 'error' not in st.session_state:
+    st.session_state.error = ""
+
+# --- Logic Functions ---
+# These functions modify the session state, triggered by button clicks.
+
+def handle_screening():
     """
-    Helper function to display the result in a styled box.
-    'reasons' can be a string (for 'Refer') or a list of strings (for 'Do Not Refer').
-    'next_steps_list' can be a flat list (for 'Refer') or a list of lists (for 'Do Not Refer').
+    Runs the screening logic based on values in st.session_state.
+    Updates st.session_state.screening_result and st.session_state.error.
     """
-    if decision == 'Refer':
-        st.success(f"**Decision: {decision} to Transplant**")
-        st.write(f"**Reason:** {reasons}") # 'reasons' is a string
-    else:
-        st.error(f"**Decision: {decision}**")
-        st.markdown("**Reason(s):**")
-        if isinstance(reasons, list):
-            for r in reasons:
-                st.markdown(f"- {r}")
-        else:
-            st.markdown(f"- {reasons}") # Fallback for single reason
+    st.session_state.error = ""  # Clear previous errors
+    st.session_state.screening_result = None # Clear previous results
 
-    if next_steps_list:
-        st.markdown("**Next Steps:**")
-        
-        flat_steps = []
-        # Check if next_steps_list is a list of lists (from 'Do Not Refer')
-        if next_steps_list and isinstance(next_steps_list[0], list):
-            # Flatten it
-            for sublist in next_steps_list:
-                flat_steps.extend(sublist)
-        else:
-            # It's already a flat list (from 'Refer')
-            flat_steps = next_steps_list
-        
-        # Use dict.fromkeys to remove duplicates while preserving order
-        unique_steps = list(dict.fromkeys(flat_steps)) 
-        
-        for step in unique_steps:
-            st.markdown(f"- {step}")
+    # --- Step 0: Validation ---
+    # Get values from session_state (populated by widgets)
+    egfr = st.session_state.get('egfr')
+    on_dialysis = st.session_state.get('on_dialysis', False)
 
-# --- Page Configuration ---
-st.set_page_config(page_title="Kidney Transplant Screener", layout="wide")
+    if not egfr and not on_dialysis:
+        st.session_state.error = 'Please enter a Lowest eGFR value or check if the patient is on dialysis.'
+        return
 
-# --- Header ---
-st.title("Sanford Transplant Center, Fargo")
-st.header("Kidney Transplant Referral Screener")
+    # Get optional values
+    hgb_a1c = st.session_state.get('hgb_a1c')
+    ef = st.session_state.get('ejection_fraction')
 
-st.markdown("---")
+    # Arrays to collect all "Do Not Refer" reasons
+    reasons_not_to_refer = []
+    next_steps_not_to_refer = []
 
-# --- Input Form ---
-# Using a form bundles all inputs; the app only reruns when "Evaluate" is clicked.
-with st.form(key="screener_form"):
+    # --- Step 1: Check for Absolute Contraindications ---
+    if hgb_a1c is not None and hgb_a1c > 10:
+        reasons_not_to_refer.append(f"HgbA1c is {hgb_a1c}%.")
+        next_steps_not_to_refer.append(['Work with Primary Medical Doctor/Endocrinologist, transplant refer after HbA1C<10'])
+
+    if ef is not None and ef < 15:
+        reasons_not_to_refer.append(f"Ejection Fraction is {ef}%.")
+        next_steps_not_to_refer.append(['Consult with cardiology to evaluate for reversible causes of low EF and optimization before transplant referral'])
+
+    # Check all contraindication checkboxes
+    if st.session_state.get('homeO2', False):
+        reasons_not_to_refer.append('Patient requires home O2.')
+        next_steps_not_to_refer.append(['Refer to Pulmonologist for optimization.'])
     
-    # We use columns to create the two-column layout
+    if st.session_state.get('smoker', False):
+        reasons_not_to_refer.append('Current active smoker.')
+        next_steps_not_to_refer.append(['Enter a referral to Tobacco Cessation.', 'Can be re-referred after abstaining for 6 months.'])
+    
+    if st.session_state.get('cancer', False):
+        reasons_not_to_refer.append('Active cancer diagnosis.')
+        next_steps_not_to_refer.append(['Referral can be reconsidered after treatment and appropriate cancer-free period as determined by an oncologist.'])
+    
+    if st.session_state.get('infection', False):
+        reasons_not_to_refer.append('Active infectious disease.')
+        next_steps_not_to_refer.append(['Consult Infectious Disease refer after resolution of active infection and completion of course of antibiotics'])
+    
+    if st.session_state.get('abuse', False):
+        reasons_not_to_refer.append('Current drug or alcohol abuse.')
+        next_steps_not_to_refer.append(['Enter CD Eval for First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.'])
+    
+    if st.session_state.get('homeless', False):
+        reasons_not_to_refer.append('Patient is homeless (high risk of infection).')
+        next_steps_not_to_refer.append(['Address housing situation before referral can be considered.'])
+    
+    if st.session_state.get('noSupport', False):
+        reasons_not_to_refer.append('No social support system.')
+        next_steps_not_to_refer.append(['Patient needs to establish a reliable social support system before referral.'])
+    
+    if st.session_state.get('noncompliance', False):
+        reasons_not_to_refer.append('Missed Dialysis >50%.')
+        next_steps_not_to_refer.append(['Patient must demonstrate compliance with dialysis attendance for 6 months before re-referral.'])
+
+    # --- Step 1b: Aggregate Contraindications ---
+    if reasons_not_to_refer:
+        # Flatten the next_steps list
+        flat_next_steps = [step for sublist in next_steps_not_to_refer for step in sublist]
+        st.session_state.screening_result = {
+            'decision': 'Do Not Refer',
+            'reasons': reasons_not_to_refer,
+            'nextSteps': flat_next_steps
+        }
+        return
+
+    # --- Step 2: Check for Referral Qualifications ---
+    # This part only runs if NO contraindications were found
+    has_uremia = st.session_state.get('has_uremia', False)
+
+    if on_dialysis:
+        st.session_state.screening_result = {
+            'decision': 'Refer',
+            'reason': 'Patient is currently on dialysis.',
+            'nextSteps': ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.']
+        }
+        return
+
+    if egfr is not None:
+        if egfr <= 20:
+            st.session_state.screening_result = {
+                'decision': 'Refer',
+                'reason': f'Lowest eGFR is {egfr}, which is <= 20.',
+                'nextSteps': ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.']
+            }
+            return
+        if 20 < egfr <= 25 and has_uremia:
+            st.session_state.screening_result = {
+                'decision': 'Refer',
+                'reason': 'Lowest eGFR is between 20-25 and have signs of uremia.',
+                'nextSteps': ['Ensure uremia signs are stated in MD note.', 'Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.']
+            }
+            return
+
+    # --- Step 3: If no criteria met ---
+    st.session_state.screening_result = {
+        'decision': 'Do Not Refer',
+        'reason': 'Patient does not meet the Lowest eGFR or dialysis criteria for referral at this time.',
+        'nextSteps': ['Continue to monitor patient as per standard CKD management protocols.']
+    }
+
+def handle_reset():
+    """
+    Resets all input widgets and output states to their defaults.
+    """
+    # Reset all input widget states by setting their keys
+    st.session_state.egfr = None
+    st.session_state.on_dialysis = False
+    st.session_state.has_uremia = False
+    st.session_state.hgb_a1c = None
+    st.session_state.ejection_fraction = None
+    st.session_state.homeO2 = False
+    st.session_state.smoker = False
+    st.session_state.cancer = False
+    st.session_state.infection = False
+    st.session_state.abuse = False
+    st.session_state.homeless = False
+    st.session_state.noSupport = False
+    st.session_state.noncompliance = False
+    
+    # Reset output states
+    st.session_state.screening_result = None
+    st.session_state.error = ""
+
+
+def display_result():
+    """
+    Renders the ResultCard equivalent using st.success or st.error
+    based on the content of st.session_state.screening_result.
+    """
+    result = st.session_state.screening_result
+    if not result:
+        return
+
+    is_referral = result['decision'] == 'Refer'
+    
+    if is_referral:
+        with st.success(f"**Decision: {result['decision']} to Transplant**", icon="✅"):
+            if result.get('reason'):
+                st.write(result['reason'])
+            
+            if result.get('nextSteps'):
+                st.divider()
+                st.markdown("**Next Steps:**")
+                for step in result['nextSteps']:
+                    st.markdown(f"- {step}")
+    else:
+        with st.error(f"**Decision: {result['decision']}**", icon="❌"):
+            # Handle single reason (string) or multiple (array)
+            if result.get('reason'):
+                st.write(result['reason'])
+            elif result.get('reasons'):
+                st.markdown("**Reasons:**")
+                for r in result['reasons']:
+                    st.markdown(f"- {r}")
+
+            if result.get('nextSteps'):
+                st.divider()
+                st.markdown("**Next Steps:**")
+                for step in result['nextSteps']:
+                    st.markdown(f"- {step}")
+
+# --- Main App Layout ---
+
+st.set_page_config(page_title="Kidney Transplant Screener", layout="centered")
+
+# Header
+st.title("Sanford Transplant Center, Fargo")
+st.subheader("Kidney Transplant Referral Screener")
+
+# Input Card
+with st.container(border=True):
+    st.subheader("Patient Information")
+
+    # Display error if it exists
+    if st.session_state.error:
+        st.error(st.session_state.error)
+
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Patient Information")
-        # Use None as default for number_input to check if it's filled
-        egfr = st.number_input("Lowest eGFR", value=None, placeholder="e.g., 18", step=1.0)
-        hgbA1c = st.number_input("HgbA1c (%)", value=None, placeholder="e.g., 7.5", step=0.1)
-        ejection_fraction = st.number_input("Ejection Fraction on last ECHO (%)", value=None, placeholder="e.g., 55", step=1.0)
-        
-        st.markdown("---")
-        on_dialysis = st.checkbox("Patient is on Dialysis")
-        has_uremia = st.checkbox("Signs of Uremia (must be in MD note)", help="Required if lowest eGFR is 20-25")
-
+        st.number_input(
+            "Lowest eGFR", 
+            key="egfr", 
+            value=None, 
+            placeholder="e.g., 18", 
+            format="%f",
+            step=1.0
+        )
+        st.number_input(
+            "HgbA1c (%)", 
+            key="hgb_a1c", 
+            value=None, 
+            placeholder="e.g., 7.5", 
+            format="%.1f",
+            step=0.1
+        )
+        st.number_input(
+            "Ejection Fraction on last ECHO (%)", 
+            key="ejection_fraction", 
+            value=None, 
+            placeholder="e.g., 55", 
+            format="%f",
+            step=1.0
+        )
+        st.checkbox("Patient is on Dialysis", key="on_dialysis")
+        st.checkbox(
+            "Signs of Uremia (must be in MD note)", 
+            key="has_uremia", 
+            help="Required if Lowest eGFR is > 20 and <= 25"
+        )
+    
     with col2:
-        st.subheader("Patient History")
-        home_o2 = st.checkbox("Requires Home O2")
-        smoker = st.checkbox("Current Active Smoker")
-        cancer = st.checkbox("Active Cancer")
-        infection = st.checkbox("Active Infectious Disease")
-        abuse = st.checkbox("Current Drug/Alcohol Abuse")
-        homeless = st.checkbox("Homeless")
-        no_support = st.checkbox("No Social Support")
-        noncompliance = st.checkbox("Missed Dialysis >50%")
+        st.markdown("**Current History**")
+        st.checkbox("Requires Home O2", key="homeO2")
+        st.checkbox("Current Active Smoker", key="smoker")
+        st.checkbox("Active Cancer", key="cancer")
+        st.checkbox("Active Infectious Disease", key="infection")
+        st.checkbox("Current Drug/Alcohol Abuse", key="abuse")
+        st.checkbox("Homeless", key="homeless")
+        st.checkbox("No Social Support", key="noSupport")
+        st.checkbox("Missed Dialysis >50%", key="noncompliance")
 
-    # --- Buttons ---
-    submitted = st.form_submit_button("Evaluate")
+    # Buttons
+    # We use columns to right-align the buttons, similar to `justify-end`
+    st.divider()
+    _, btn_col1, btn_col2 = st.columns([2, 1, 1])
     
-# --- Logic (runs after "Evaluate" is clicked) ---
-if submitted:
-    
-    # --- Step 0: Validation ---
-    if egfr is None and not on_dialysis:
-        st.error('**Error:** Please enter an eGFR value or check if the patient is on dialysis.')
-    
-    
-    # --- Step 1: Check ALL Contraindications ---
-    else: # Only run logic if validation passes
-        contraindication_reasons = []
-        contraindication_next_steps = []
+    with btn_col1:
+        st.button(
+            "Reset", 
+            on_click=handle_reset, 
+            use_container_width=True
+        )
+    with btn_col2:
+        st.button(
+            "Evaluate", 
+            on_click=handle_screening, 
+            type="primary", 
+            use_container_width=True
+        )
 
-        if hgbA1c > 10:
-            contraindication_reasons.append(f'HgbA1c is {hgbA1c}%.')
-            contraindication_next_steps.append(['Work with Primary Medical Doctor/Endocrinologist, transplant referral after HbA1C<10'])
-        
-        if ejection_fraction < 15:
-            contraindication_reasons.append(f'Ejection Fraction is {ejection_fraction}%.')
-            contraindication_next_steps.append(['Consult with cardiology to evaluate for reversible causes of low EF and optimization before transplant referral'])
-        
-        if home_o2:
-            contraindication_reasons.append('Patient requires home O2.')
-            contraindication_next_steps.append(['Refer to Pulmonologist for optimization.'])
-        
-        if smoker:
-            contraindication_reasons.append('Current active smoker.')
-            contraindication_next_steps.append(['Enter a referral to Tobacco Cessation.', 'Can be re-referred after abstaining for 6 months.'])
-        
-        if cancer:
-            contraindication_reasons.append('Active cancer diagnosis.')
-            contraindication_next_steps.append(['Referral can be reconsidered after treatment and appropriate cancer-free period as determined by an oncologist.'])
-        
-        if infection:
-            contraindication_reasons.append('Active infectious disease.')
-            contraindication_next_steps.append(['Consult Infectious Disease, refer after resolution of active infection and completion of course of antibiotics'])
-        
-        if abuse:
-            contraindication_reasons.append('Current drug or alcohol abuse.')
-            contraindication_next_steps.append(['Enter CD Eval as First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from CD Eval.'])
-        
-        if homeless:
-            contraindication_reasons.append('Patient is homeless (high risk of infection).')
-            contraindication_next_steps.append(['Address housing situation before referral can be considered.'])
-        
-        if no_support:
-            contraindication_reasons.append('No social support system.')
-            contraindication_next_steps.append(['Patient needs to establish a reliable social support system before referral.'])
-        
-        if noncompliance:
-            contraindication_reasons.append('Missed Dialysis >50%')
-            contraindication_next_steps.append(['Patient must demonstrate a 6 months period of compliance before re-referral.'])
+# Result Card
+# This function will only display if st.session_state.screening_result is not None
+display_result()
 
-        # --- Step 2: Decide based on contraindications ---
-        if contraindication_reasons:
-            # If any contraindications were found, display them all.
-            display_result('Do Not Refer', contraindication_reasons, contraindication_next_steps)
-        
-        # --- Step 3: If NO contraindications, check referral qualifications ---
-        else:
-            if on_dialysis:
-                display_result('Refer', 'Patient is currently on dialysis.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
-            
-            elif egfr is not None:
-                if egfr <= 20:
-                    display_result('Refer', f'Lowest eGFR is {egfr}, which is <= 20.', ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
-                elif 21 <= egfr <= 25 and has_uremia:
-                    display_result('Refer', 'Lowest eGFR is between 20-25 and have signs of uremia.', ['Ensure uremia signs are stated in MD note.', 'Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'])
-                else:
-                    # --- Step 4: If no criteria met ---
-                    display_result('Do Not Refer', 'Patient does not meet the eGFR or dialysis criteria for referral at this time.', ['Continue to monitor patient as per standard CKD management protocols.'])
-            
-            else:
-                # This case should be caught by validation, but it's good to have a fallback.
-                st.info("Please fill out the form to get an evaluation.")
-
-
-# --- Footer ---
-st.markdown("---")
-st.caption("""
-**Disclaimer:** The information and results provided by this tool are for guidance only and are not a substitute for professional medical advice, diagnosis, or treatment. All referral decisions must be made by qualified medical personnel based on a comprehensive evaluation of the patient.
-
-© 2025 Anant Dinesh, MD, Transplant Surgeon Sanford Transplant Center, Fargo. All Rights Reserved.
-""")
+# Footer
+st.divider()
+st.caption(
+    "**Disclaimer:** The information and results provided by this tool are for guidance only and "
+    "are not a substitute for professional medical advice, diagnosis, or treatment. All referral "
+    "decisions must be made by qualified medical personnel based on a comprehensive evaluation of the patient."
+)
+st.caption("© 2025 Anant Dinesh MD MS, Transplant Surgeon - Sanford Transplant Center, Fargo. All Rights Reserved.")
