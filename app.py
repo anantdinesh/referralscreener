@@ -43,7 +43,7 @@ with st.form(key="screener_form"):
         st.subheader("Patient Information")
         # Use None as default for number_input to check if it's filled
         egfr = st.number_input("Lowest eGFR", value=None, placeholder="e.g., 18", step=1.0)
-        hgbA1c = st.number_input("HgbA1c (%)", value=None, placeholder="e.g., 7.5 (Optional)", step=0.1)
+        hgbA1c = st.number_input("HgbA1c (%) if Diabetic", value=None, placeholder="e.g., 7.5 (Optional)", step=0.1)
         ejection_fraction = st.number_input("Ejection Fraction on last ECHO (%)", value=None, placeholder="e.g., 55 (Optional)", step=1.0)
         
         st.markdown("---")
@@ -54,7 +54,7 @@ with st.form(key="screener_form"):
         )
 
     with col2:
-        st.subheader("Current History / Contraindications")
+        st.subheader("Current History")
         home_o2 = st.checkbox("Requires Home O2")
         smoker = st.checkbox("Current Active Smoker")
         cancer = st.checkbox("Active Cancer")
