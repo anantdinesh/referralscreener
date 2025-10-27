@@ -84,8 +84,7 @@ if submitted:
     # --- Step 0: Validation ---
     if egfr is None and not on_dialysis:
         st.error('**Error:** Please enter an eGFR value or check if the patient is on dialysis.')
-    elif hgbA1c is None or ejection_fraction is None:
-        st.error('**Error:** Please enter values for both HgbA1c and Ejection Fraction.')
+    
     
     # --- Step 1: Check ALL Contraindications ---
     else: # Only run logic if validation passes
