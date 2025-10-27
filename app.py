@@ -1,287 +1,321 @@
-import React, { useState } from 'react';
+import streamlit as st
 
-// --- Helper Components ---
-const Card = ({ children, className }) => (
-  <div className={`bg-white rounded-2xl shadow-lg p-6 sm:p-8 ${className}`}>
-    {children}
-  </div>
-);
+# --- State Management ---
+# We use st.session_state to store all input values and results,
+# mimicking React's state.
 
-const Checkbox = ({ id, label, checked, onChange, helpText }) => (
-  <div className="flex items-start">
-    <div className="flex items-center h-5">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-      />
-    </div>
-    <div className="ml-3 text-sm">
-      <label htmlFor={id} className="font-medium text-gray-700">{label}</label>
-      {helpText && <p className="text-gray-500">{helpText}</p>}
-    </div>
-  </div>
-);
-
-const ResultCard = ({ result }) => {
-    if (!result) return null;
-
-    const isReferral = result.decision === 'Refer';
-    const bgColor = isReferral ? 'bg-green-50' : 'bg-red-50';
-    const textColor = isReferral ? 'text-green-800' : 'text-red-800';
-    const ringColor = isReferral ? 'ring-green-600/20' : 'ring-red-600/20';
-    const icon = isReferral ? (
-        <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    ) : (
-        <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    );
-
-    return (
-        <Card className={`${bgColor} ring-1 ${ringColor}`}>
-            <div className="flex items-start gap-4">
-                <div>{icon}</div>
-                <div className="flex-1">
-                    <h3 className={`text-2xl font-bold ${textColor}`}>{result.decision} to Transplant</h3>
-                    
-                    {/* Display Reason(s) */}
-                    <div className="mt-2">
-                        {result.reason && (
-                            <>
-                                <h4 className="font-semibold text-gray-800">Reason:</h4>
-                                <p className={`mt-1 text-md ${textColor}`}>{result.reason}</p>
-                            </>
-                        )}
-                        {result.reasons && result.reasons.length > 0 && (
-                            <>
-                                <h4 className="font-semibold text-gray-800">Reasons:</h4>
-                                <ul className={`list-disc list-inside mt-1 text-md ${textColor} space-y-1`}>
-                                    {result.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                                </ul>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
-            {result.nextSteps && result.nextSteps.length > 0 && (
-                 <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="font-semibold text-gray-800">Next Steps:</h4>
-                    <ul className="list-disc list-inside mt-2 text-gray-700 space-y-1">
-                       {result.nextSteps.map((step, index) => <li key={index}>{step}</li>)}
-                    </ul>
-                 </div>
-            )}
-        </Card>
-    );
-};
-
-const InputField = ({ id, label, value, onChange, placeholder, type = "number", required = false }) => (
-    <div>
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700">{label}</label>
-        <input
-            type={type}
-            id={id}
-            value={value}
-            onChange={onChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder={placeholder}
-            required={required}
-        />
-    </div>
-);
-
-
-export default function App() {
-  const [egfr, setEgfr] =useState('');
-  const [onDialysis, setOnDialysis] = useState(false);
-  const [hasUremia, setHasUremia] = useState(false);
-  const [hgbA1c, setHgbA1c] = useState('');
-  const [ejectionFraction, setEjectionFraction] = useState('');
-
-  const [contraindications, setContraindications] = useState({
-    homeO2: false,
-    smoker: false,
-    cancer: false,
-    infection: false,
-    abuse: false,
-    homeless: false,
-    noSupport: false,
-    noncompliance: false,
-  });
-
-  const [screeningResult, setScreeningResult] = useState(null);
-  const [error, setError] = useState('');
-
-  const handleCheckboxChange = (e) => {
-    const { id, checked } = e.target;
-    setContraindications({ ...contraindications, [id]: checked });
-  };
-
-  const handleScreening = () => {
-    setError(''); // Clear previous errors
-    // --- Step 0: Validation ---
-    if (!egfr && !onDialysis) {
-        setError('Please enter a Lowest eGFR value or check if the patient is on dialysis.');
-        setScreeningResult(null);
-        return;
+def initialize_state():
+    """Initializes session state for all form inputs and results."""
+    # Define all default values in one place
+    defaults = {
+        "egfr": None,
+        "onDialysis": False,
+        "hasUremia": False,
+        "hgbA1c": None,
+        "ejectionFraction": None,
+        "homeO2": False,
+        "smoker": False,
+        "cancer": False,
+        "infection": False,
+        "abuse": False,
+        "homeless": False,
+        "noSupport": False,
+        "noncompliance": False,
+        "screening_result": None,
+        "error_message": None
     }
+    # Loop and set keys in session_state if they don't already exist
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
-    const hgbA1cValue = parseFloat(hgbA1c);
-    const efValue = parseFloat(ejectionFraction);
+def reset_form():
+    """Resets all session state keys to their default values."""
+    # Define all default values
+    defaults = {
+        "egfr": None,
+        "onDialysis": False,
+        "hasUremia": False,
+        "hgbA1c": None,
+        "ejectionFraction": None,
+        "homeO2": False,
+        "smoker": False,
+        "cancer": False,
+        "infection": False,
+        "abuse": False,
+        "homeless": False,
+        "noSupport": False,
+        "noncompliance": False,
+        "screening_result": None,
+        "error_message": None
+    }
+    # Overwrite all keys with default values
+    for key, value in defaults.items():
+        st.session_state[key] = value
 
-    // Arrays to collect all "Do Not Refer" reasons
-    let reasonsNotToRefer = [];
-    let nextStepsNotToRefer = [];
+# --- Core Logic ---
 
-    // --- Step 1: Check for Absolute Contraindications ---
-    // These checks will now collect reasons instead of returning immediately
-    if (hgbA1cValue > 10) {
-      reasonsNotToRefer.push(`HgbA1c is ${hgbA1cValue}%.`);
-      nextStepsNotToRefer.push(['Work with Primary Medical Doctor/Endocrinologist, transplant refer after HbA1C<10']);
-    }
-    if (efValue < 15) {
-      reasonsNotToRefer.push(`Ejection Fraction is ${efValue}%.`);
-      nextStepsNotToRefer.push(['Consult with cardiology to evaluate for reversible causes of low EF and optimization before transplant referral']);
-    }
-     if (contraindications.homeO2) {
-      reasonsNotToRefer.push('Patient requires home O2.');
-      nextStepsNotToRefer.push(['Refer to Pulmonologist for optimization.']);
-    }
-    if (contraindications.smoker) {
-      reasonsNotToRefer.push('Current active smoker.');
-      nextStepsNotToRefer.push(['Enter a referral to Tobacco Cessation.', 'Can be re-referred after abstaining for 6 months.']);
-    }
-    if (contraindications.cancer) {
-      reasonsNotToRefer.push('Active cancer diagnosis.');
-      nextStepsNotToRefer.push(['Referral can be reconsidered after treatment and appropriate cancer-free period as determined by an oncologist.']);
-    }
-     if (contraindications.infection) {
-      reasonsNotToRefer.push('Active infectious disease.');
-      nextStepsNotToRefer.push(['Consult Infectious Disease refer after resolution of active infection and completion of course of antibiotics']);
-    }
-    if (contraindications.abuse) {
-      reasonsNotToRefer.push('Current drug or alcohol abuse.');
-      nextStepsNotToRefer.push(['Enter CD Eval for First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.']);
-    }
-    if (contraindications.homeless) {
-      reasonsNotToRefer.push('Patient is homeless (high risk of infection).');
-      nextStepsNotToRefer.push(['Address housing situation before referral can be considered.']);
-    }
-    if (contraindications.noSupport) {
-      reasonsNotToRefer.push('No social support system.');
-      nextStepsNotToRefer.push(['Patient needs to establish a reliable social support system before referral.']);
-    }
-    if (contraindications.noncompliance) {
-      reasonsNotToRefer.push('Missed Dialysis >50%.');
-      nextStepsNotToRefer.push(['Patient must demonstrate compliance with dialysis attendance for 6 months before re-referral.']);
-    }
+def evaluate_screening():
+    """
+    Runs the screening logic based on values in st.session_state.
+    Results are saved back into st.session_state.
+    """
+    # Clear previous results and errors
+    st.session_state.screening_result = None
+    st.session_state.error_message = None
+
+    # --- Step 0: Validation ---
+    # st.number_input returns None if empty, which is what we want to check.
+    if st.session_state.egfr is None and not st.session_state.onDialysis:
+        st.session_state.error_message = 'Please enter a Lowest eGFR value or check if the patient is on dialysis.'
+        return
+
+    # Get values from session state
+    hgbA1c_value = st.session_state.hgbA1c
+    ef_value = st.session_state.ejectionFraction
+
+    reasons_not_to_refer = []
+    next_steps_not_to_refer = []
+
+    # --- Step 1: Check for Absolute Contraindications ---
+    if hgbA1c_value is not None and hgbA1c_value > 10:
+        reasons_not_to_refer.append(f"HgbA1c is {hgbA1c_value}%.")
+        next_steps_not_to_refer.extend(['Work with Primary Medical Doctor/Endocrinologist, transplant refer after HbA1C<10'])
     
-    // --- Step 1b: Aggregate Contraindications ---
-    // If we found any contraindications, set that as the result and stop.
-    if (reasonsNotToRefer.length > 0) {
-        setScreeningResult({
-            decision: 'Do Not Refer',
-            reasons: reasonsNotToRefer, // Pass reasons as an array
-            nextSteps: nextStepsNotToRefer.flat() // Flatten all next steps arrays
-        });
-        return;
-    }
-
-    // --- Step 2: Check for Referral Qualifications ---
-    // This part only runs if NO contraindications were found
-    const egfrValue = parseFloat(egfr);
-
-    if (onDialysis) {
-        setScreeningResult({ decision: 'Refer', reason: 'Patient is currently on dialysis.', nextSteps: ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'] });
-        return;
-    }
-
-    if (!isNaN(egfrValue)) {
-        if (egfrValue <= 20) {
-            setScreeningResult({ decision: 'Refer', reason: `Lowest eGFR is ${egfrValue}, which is <= 20.`, nextSteps: ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'] });
-            return;
-        }
-        if (egfrValue > 20 && egfrValue <= 25 && hasUremia) {
-            setScreeningResult({ decision: 'Refer', reason: `Lowest eGFR is between 20-25 and have signs of uremia.`, nextSteps: ['Ensure uremia signs are stated in MD note.', 'Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.'] });
-            return;
-        }
-    }
+    if ef_value is not None and ef_value < 15:
+        reasons_not_to_refer.append(f"Ejection Fraction is {ef_value}%.")
+        next_steps_not_to_refer.extend(['Consult with cardiology to evaluate for reversible causes of low EF and optimization before transplant referral'])
     
-    // --- Step 3: If no criteria met ---
-    setScreeningResult({ decision: 'Do Not Refer', reason: 'Patient does not meet the Lowest eGFR or dialysis criteria for referral at this time.', nextSteps: ['Continue to monitor patient as per standard CKD management protocols.'] });
-  };
+    if st.session_state.homeO2:
+        reasons_not_to_refer.append('Patient requires home O2.')
+        next_steps_not_to_refer.extend(['Refer to Pulmonologist for optimization.'])
+    
+    if st.session_state.smoker:
+        reasons_not_to_refer.append('Current active smoker.')
+        next_steps_not_to_refer.extend(['Enter a referral to Tobacco Cessation.', 'Can be re-referred after abstaining for 6 months.'])
+    
+    if st.session_state.cancer:
+        reasons_not_to_refer.append('Active cancer diagnosis.')
+        next_steps_not_to_refer.extend(['Referral can be reconsidered after treatment and appropriate cancer-free period as determined by an oncologist.'])
+    
+    if st.session_state.infection:
+        reasons_not_to_refer.append('Active infectious disease.')
+        next_steps_not_to_refer.extend(['Consult Infectious Disease refer after resolution of active infection and completion of course of antibiotics'])
+    
+    if st.session_state.abuse:
+        reasons_not_to_refer.append('Current drug or alcohol abuse.')
+        next_steps_not_to_refer.extend(['Enter CD Eval for First Step (651-925-0057).', 'Can be re-referred when treatment is complete, and we have documentation from First Step.'])
+    
+    if st.session_state.homeless:
+        reasons_not_to_refer.append('Patient is homeless (high risk of infection).')
+        next_steps_not_to_refer.extend(['Address housing situation before referral can be considered.'])
+    
+    if st.session_state.noSupport:
+        reasons_not_to_refer.append('No social support system.')
+        next_steps_not_to_refer.extend(['Patient needs to establish a reliable social support system before referral.'])
+    
+    if st.session_state.noncompliance:
+        reasons_not_to_refer.append('Missed Dialysis >50%.')
+        next_steps_not_to_refer.extend(['Patient must demonstrate compliance with dialysis attendance for 6 months before re-referral.'])
 
-  const handleReset = () => {
-      setEgfr('');
-      setOnDialysis(false);
-      setHasUremia(false);
-      setHgbA1c('');
-      setEjectionFraction('');
-      setContraindications({
-        homeO2: false, smoker: false, cancer: false, 
-        infection: false, abuse: false, homeless: false, noSupport: false, noncompliance: false,
-      });
-      setScreeningResult(null);
-      setError('');
-  };
+    # --- Step 1b: Aggregate Contraindications ---
+    if reasons_not_to_refer:
+        st.session_state.screening_result = {
+            'decision': 'Do Not Refer',
+            'reasons': reasons_not_to_refer,
+            'nextSteps': next_steps_not_to_refer
+        }
+        return
 
-  return (
-    <div className="bg-gray-100 min-h-screen font-sans text-gray-900 relative">
-      <div 
-        className="absolute inset-0 bg-no-repeat bg-center bg-contain opacity-5 pointer-events-none"
-        style={{ backgroundImage: "url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Kidney_illustration.svg/1200px-Kidney_illustration.svg.png')" }}
-        aria-hidden="true"
-      ></div>
-      <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl relative z-10">
-        <header className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-4">Sanford Transplant Center, Fargo</h1>
-            <h2 className="text-2xl text-gray-600">Kidney Transplant Referral Screener</h2>
-        </header>
+    # --- Step 2: Check for Referral Qualifications ---
+    egfr_value = st.session_state.egfr
+
+    if st.session_state.onDialysis:
+        st.session_state.screening_result = {
+            'decision': 'Refer',
+            'reason': 'Patient is currently on dialysis.',
+            'nextSteps': ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.']
+        }
+        return
+
+    if egfr_value is not None:
+        if egfr_value <= 20:
+            st.session_state.screening_result = {
+                'decision': 'Refer',
+                'reason': f'Lowest eGFR is {egfr_value}, which is <= 20.',
+                'nextSteps': ['Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.']
+            }
+            return
         
-        <div className="space-y-8">
-            <Card>
-                <h3 className="text-xl font-semibold text-gray-800 border-b pb-3 mb-6">Patient Information</h3>
-                {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <div className="space-y-4">
-                       <InputField id="egfr" label="Lowest eGFR" value={egfr} onChange={(e) => setEgfr(e.target.value)} placeholder="e.g., 18" required />
-                       <InputField id="hgbA1c" label="HgbA1c (%)" value={hgbA1c} onChange={(e) => setHgbA1c(e.target.value)} placeholder="e.g., 7.5 (Optional)" />
-                       <InputField id="ejectionFraction" label="Ejection Fraction on last ECHO (%)" value={ejectionFraction} onChange={(e) => setEjectionFraction(e.target.value)} placeholder="e.g., 55 (Optional)" />
-                       <Checkbox id="onDialysis" label="Patient is on Dialysis" checked={onDialysis} onChange={(e) => setOnDialysis(e.target.checked)} />
-                       <Checkbox id="hasUremia" label="Signs of Uremia (must be in MD note)" checked={hasUremia} onChange={(e) => setHasUremia(e.target.checked)} helpText="Required if Lowest eGFR is > 20 and <= 25" />
-                    </div>
-                    <div className="space-y-4 md:pl-6 md:border-l">
-                         <h4 className="font-semibold text-gray-600">Current History</h4>
-                         <Checkbox id="homeO2" label="Requires Home O2" checked={contraindications.homeO2} onChange={handleCheckboxChange} />
-                         <Checkbox id="smoker" label="Current Active Smoker" checked={contraindications.smoker} onChange={handleCheckboxChange} />
-                         <Checkbox id="cancer" label="Active Cancer" checked={contraindications.cancer} onChange={handleCheckboxChange} />
-                         <Checkbox id="infection" label="Active Infectious Disease" checked={contraindications.infection} onChange={handleCheckboxChange} />
-                         <Checkbox id="abuse" label="Current Drug/Alcohol Abuse" checked={contraindications.abuse} onChange={handleCheckboxChange} />
-                         <Checkbox id="homeless" label="Homeless" checked={contraindications.homeless} onChange={handleCheckboxChange} />
-                         <Checkbox id="noSupport" label="No Social Support" checked={contraindications.noSupport} onChange={handleCheckboxChange} />
-                         <Checkbox id="noncompliance" label="Missed Dialysis >50%" checked={contraindications.noncompliance} onChange={handleCheckboxChange} />
-                    </div>
-                </div>
-                 <div className="mt-8 flex justify-end space-x-4">
-                    <button type="button" onClick={handleReset} className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Reset
-                    </button>
-                    <button type="button" onClick={handleScreening} className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Evaluate
-                    </button>
-                </div>
-            </Card>
+        if 20 < egfr_value <= 25 and st.session_state.hasUremia:
+            st.session_state.screening_result = {
+                'decision': 'Refer',
+                'reason': 'Lowest eGFR is between 20-25 and have signs of uremia.',
+                'nextSteps': ['Ensure uremia signs are stated in MD note.', 'Refer for Transplant to Sanford Transplant Center, Fargo using EPIC Transplant Services Referral or fax referral sheet to 701-234-7341.', 'For more information, call 701-234-6715.']
+            }
+            return
 
-            <ResultCard result={screeningResult} />
+    # --- Step 3: If no criteria met ---
+    st.session_state.screening_result = {
+        'decision': 'Do Not Refer',
+        'reason': 'Patient does not meet the Lowest eGFR or dialysis criteria for referral at this time.',
+        'nextSteps': ['Continue to monitor patient as per standard CKD management protocols.']
+    }
 
-        </div>
-        <footer className="text-center mt-12 text-gray-500 text-sm space-y-2">
-            <p><strong>Disclaimer:</strong> The information and results provided by this tool are for guidance only and are not a substitute for professional medical advice, diagnosis, or treatment. All referral decisions must be made by qualified medical personnel based on a comprehensive evaluation of the patient.</p>
-            <p>&copy; 2025 Anant Dinesh, MD Transplant Surgeon Sanford Transplant Center, Fargo. All Rights Reserved.</p>
-        </footer>
-      </div>
-    </div>
-  );
-}
+# --- UI Display Functions ---
 
+def display_result():
+    """
+    Renders the result from session_state using st.success or st.error,
+    matching the style of the React ResultCard.
+    """
+    result = st.session_state.screening_result
+    if not result:
+        return
+
+    if result['decision'] == 'Refer':
+        # Use st.success for the green "Refer" card
+        with st.success(""):
+            # The icon parameter is not used inside 'with' block,
+            # so we use markdown for the header.
+            st.markdown(f"### <span style='font-size: 1.25em;'>✅ Refer to Transplant</span>", unsafe_allow_html=True)
+            
+            # Display Reason(s)
+            if result.get('reason'):
+                st.markdown(f"**Reason:** {result['reason']}")
+            if result.get('reasons'):
+                st.markdown("**Reasons:**")
+                for r in result['reasons']:
+                    st.markdown(f"- {r}")
+
+            # Display Next Steps
+            if result.get('nextSteps'):
+                st.markdown("---")  # Horizontal line divider
+                st.markdown("**Next Steps:**")
+                for step in result['nextSteps']:
+                    st.markdown(f"- {step}")
+    
+    elif result['decision'] == 'Do Not Refer':
+        # Use st.error for the red "DoNot Refer" card
+        with st.error(""):
+            st.markdown(f"### <span style='font-size: 1.25em;'>❌ Do Not Refer</span>", unsafe_allow_html=True)
+            
+            # Display Reason(s)
+            if result.get('reason'):
+                st.markdown(f"**Reason:** {result['reason']}")
+            if result.get('reasons'):
+                st.markdown("**Reasons:**")
+                for r in result['reasons']:
+                    st.markdown(f"- {r}")
+
+            # Display Next Steps
+            if result.get('nextSteps'):
+                st.markdown("---")  # Horizontal line divider
+                st.markdown("**Next Steps:**")
+                for step in result['nextSteps']:
+                    st.markdown(f"- {step}")
+
+# --- Main Application ---
+
+# Set page configuration (must be the first Streamlit command)
+st.set_page_config(
+    page_title="Kidney Transplant Screener",
+    page_icon=" kidneys:",
+    layout="centered"
+)
+
+# Initialize the session state
+initialize_state()
+
+# --- Header ---
+st.title("Sanford Transplant Center, Fargo")
+st.header("Kidney Transplant Referral Screener")
+
+# We use st.container with a border to mimic the "Card" layout
+with st.container(border=True):
+    st.subheader("Patient Information")
+
+    # Display error message if it exists in session state
+    if st.session_state.error_message:
+        st.error(st.session_state.error_message)
+
+    # Create the form
+    with st.form(key="screener_form"):
+        col1, col2 = st.columns(2)
+
+        # --- Left Column ---
+        with col1:
+            st.number_input(
+                "Lowest eGFR",
+                min_value=0.0,
+                step=0.1,
+                format="%.1f",
+                placeholder="e.g., 18",
+                key="egfr"  # Link to session state
+            )
+            st.number_input(
+                "HgbA1c (%)",
+                min_value=0.0,
+                step=0.1,
+                format="%.1f",
+                placeholder="e.g., 7.5 (Optional)",
+                key="hgbA1c"
+            )
+            st.number_input(
+                "Ejection Fraction on last ECHO (%)",
+                min_value=0.0,
+                step=0.1,
+                format="%.1f",
+                placeholder="e.g., 55 (Optional)",
+                key="ejectionFraction"
+            )
+            st.checkbox("Patient is on Dialysis", key="onDialysis")
+            st.checkbox(
+                "Signs of Uremia (must be in MD note)",
+                key="hasUremia",
+                help="Required if Lowest eGFR is > 20 and <= 25"
+            )
+
+        # --- Right Column ---
+        with col2:
+            st.markdown("**Current History**")
+            st.checkbox("Requires Home O2", key="homeO2")
+            st.checkbox("Current Active Smoker", key="smoker")
+            st.checkbox("Active Cancer", key="cancer")
+            st.checkbox("Active Infectious Disease", key="infection")
+            st.checkbox("Current Drug/Alcohol Abuse", key="abuse")
+            st.checkbox("Homeless", key="homeless")
+            st.checkbox("No Social Support", key="noSupport")
+            st.checkbox("Missed Dialysis >50%", key="noncompliance")
+
+        # --- Form Buttons ---
+        btn_col_1, btn_col_2, _ = st.columns([1, 1, 3])
+        submit_button = btn_col_1.form_submit_button("Evaluate", type="primary")
+        reset_button = btn_col_2.form_submit_button("Reset")
+
+# --- Button Logic ---
+# Handle button presses *after* the form is defined
+if reset_button:
+    reset_form()
+    st.rerun()  # Rerun the script to show the cleared form
+
+if submit_button:
+    evaluate_screening()
+
+# --- Display Results ---
+# This function will check session_state and display if a result exists
+display_result()
+
+
+# --- Footer ---
+st.caption("---") # Visual separator
+st.caption(
+    "**Disclaimer:** The information and results provided by this tool are for "
+    "guidance only and are not a substitute for professional medical advice, "
+    "diagnosis, or treatment. All referral decisions must be made by "
+    "qualified medical personnel based on a comprehensive evaluation of the patient."
+)
+st.caption(
+    "© 2025 Anant Dinesh, MD Transplant Surgeon Sanford Transplant Center, Fargo. "
+    "All Rights Reserved."
+)
