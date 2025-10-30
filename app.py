@@ -56,7 +56,7 @@ with st.form(key="screener_form"):
     with col2:
         st.subheader("Current History")
         home_o2 = st.checkbox("Requires Home O2")
-        smoker = st.checkbox("Current Active Smoker (>= 1 pack per day)")
+        smoker = st.checkbox("Current Active Smoker (>= 1 pack per day)")
         cancer = st.checkbox("Active Cancer")
         infection = st.checkbox("Active Infectious Disease")
         abuse = st.checkbox("Current Drug/Alcohol Abuse")
