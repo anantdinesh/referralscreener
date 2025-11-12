@@ -86,7 +86,7 @@ if submitted:
         # Check numerical inputs (only if they are not empty)
         if hgbA1c is not None and hgbA1c > 10:
             reasons_not_to_refer.append(f"HgbA1c is {hgbA1c}%.")
-            next_steps_not_to_refer.append(['Work with Primary Medical Doctor/Endocrinologist, transplant refer after HbA1C<10', 'For more information, call 701-234-6715.'])
+            next_steps_not_to_refer.append(['Work with Primary Medical Doctor/Endocrinologist, transplant refer after HbA1C<10'])
         
         if ejection_fraction is not None and ejection_fraction < 15:
             reasons_not_to_refer.append(f"Ejection Fraction is {ejection_fraction}%.")
